@@ -7,40 +7,23 @@ import androidx.room.TypeConverter
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 
-class Converters {
-    private val gson = Gson()
-
-    @TypeConverter
-    fun fromTimeEventList(value: List<TimeEvent>): String {
-        return gson.toJson(value)
-    }
-
-    @TypeConverter
-    fun toTimeEventList(value: String): List<TimeEvent> {
-        val listType = object : TypeToken<List<TimeEvent>>() {}.type
-        return gson.fromJson(value, listType)
-    }
-}
-
 enum class EventType {
-    START,
     PAUSE,
     RESUME,
 }
 
 data class TimeEvent(
-    val deviceId: String,
     val eventType: EventType,
-    val timestamp: Long
+    val timestamp: Long,
+    val deviceId: String
 )
 
 @Entity(tableName = "stopwatches")
 data class Stopwatch(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
-    val label: String,
-    val start: Long,
-
+    var label: String,
+    var events: List<TimeEvent> = emptyList()
 )
 
 //val sampleCards = listOf(

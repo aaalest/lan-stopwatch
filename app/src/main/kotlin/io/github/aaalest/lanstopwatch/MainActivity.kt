@@ -20,12 +20,15 @@ import io.github.aaalest.lanstopwatch.utils.VisibilityController
 import io.github.aaalest.lanstopwatch.data.Stopwatch
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.Button
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import io.github.aaalest.lanstopwatch.components.LiveTimerText
 import io.github.aaalest.lanstopwatch.data.AppDatabase
+import io.github.aaalest.lanstopwatch.data.EventType
+import io.github.aaalest.lanstopwatch.data.TimeEvent
 //import io.github.aaalest.lanstopwatch.data.sampleCards
 import kotlinx.coroutines.launch
 
@@ -44,7 +47,7 @@ class MainActivity : ComponentActivity() {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     val flashCardVisibilityController = VisibilityController()
 
-                    Box(Modifier.padding(innerPadding)) {
+                    Column(Modifier.padding(innerPadding)) {
                         if (stopwatches.isNotEmpty()) {
                             stopwatches.forEach { stopwatch ->
 //                                StopwatchView(
@@ -52,10 +55,7 @@ class MainActivity : ComponentActivity() {
 //                                    isFlipped = flashCardVisibilityController
 //                                )
 //                                Text("Add New Stopwatch ${System.currentTimeMillis() - stopwatch.start}")
-                                LiveTimerText(
-                                    startTime = stopwatch.start,
-                                    label = stopwatch.label
-                                )
+                                LiveTimerText(stopwatch, "Phone_01")
                             }
 //                            FlashCardView(
 //                                cards.first(),
@@ -68,7 +68,23 @@ class MainActivity : ComponentActivity() {
                                         dao.upsertStopwatch(
                                             Stopwatch(
                                                 label = "New Stopwatch",
-                                                start = System.currentTimeMillis()
+//                                                events = listOf(
+//                                                    TimeEvent(
+//                                                        deviceId = "Phone_01",
+//                                                        eventType = EventType.RESUME,
+//                                                        timestamp = System.currentTimeMillis()
+//                                                    ),
+//                                                    TimeEvent(
+//                                                        deviceId = "Phone_01",
+//                                                        eventType = EventType.PAUSE,
+//                                                        timestamp = System.currentTimeMillis() + 5000
+//                                                    ),
+//                                                    TimeEvent(
+//                                                        deviceId = "Tablet_02",
+//                                                        eventType = EventType.RESUME,
+//                                                        timestamp = System.currentTimeMillis() + 10000
+//                                                    )
+//                                                )
                                             )
                                         )
                                     }
