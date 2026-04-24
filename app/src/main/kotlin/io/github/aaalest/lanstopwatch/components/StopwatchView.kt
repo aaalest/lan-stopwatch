@@ -18,7 +18,6 @@ import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -26,6 +25,16 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import io.github.aaalest.lanstopwatch.data.AppDatabase
 import io.github.aaalest.lanstopwatch.data.EventType
+
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Dehaze
+import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.ui.Alignment
 
 import io.github.aaalest.lanstopwatch.data.Stopwatch
 import io.github.aaalest.lanstopwatch.data.TimeEvent
@@ -35,8 +44,19 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 
+
+private fun formatTime(totalSeconds: Long): String {
+    val days = totalSeconds / 86400
+    val hours = (totalSeconds % 86400) / 3600
+    val minutes = (totalSeconds % 3600) / 60
+    val seconds = totalSeconds % 60
+
+    return String.format("%02d:%02d:%02d:%02d", days, hours, minutes, seconds)
+}
+
+
 @Composable
-fun LiveTimerText(stopwatch: Stopwatch, deviceId: String) {
+fun StopwatchCard(stopwatch: Stopwatch, deviceId: String) {
 //    val scope = androidx.compose.runtime.rememberCoroutineScope()
     val scope = androidx.compose.runtime.rememberCoroutineScope()
 
@@ -82,9 +102,7 @@ fun LiveTimerText(stopwatch: Stopwatch, deviceId: String) {
     }
     displayText = "${stopwatch.label}: ${elapsedSeconds}s; paused: ${pausedMillis / 1000}s; isRunning: $isRunning"
 
-
-    Text(displayText)
-    Button(
+    Card(
         onClick = {
             // 1. Create the new event
             val newEvent = if (isRunning) {
@@ -102,16 +120,106 @@ fun LiveTimerText(stopwatch: Stopwatch, deviceId: String) {
             scope.launch {
                 dao.upsertStopwatch(updatedStopwatch)
             }
-        }
+        },
+        shape = RoundedCornerShape(if (isRunning) 16.dp else 32.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding((16).dp)
     ) {
-        Text(
-            when {
-                isNew -> "Start"
-                isRunning -> "Pause"
-                else -> "Resume"
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column(
+//                modifier = Modifier.weight(1f) // Takes up remaining space
+            ) {
+                Text(
+                    text = stopwatch.label,
+//                    style = MaterialTheme.typography.titleLarge,
+//                    fontWeight = FontWeight.Bold
+                )
             }
-        )
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row {
+                    Icon(
+                        imageVector = if (isRunning) Icons.Default.Pause else Icons.Default.PlayArrow,
+                        contentDescription = "Pause Indicator",
+                    )
+                    Text(
+                        text = formatTime(elapsedSeconds),
+    //                    style = MaterialTheme.typography.headlineMedium,
+    //                    fontWeight = FontWeight.ExtraBold,
+    //                    color = if (isRunning) MaterialTheme.colorScheme.primary else Color.Gray
+                    )
+                }
+
+                // Two Buttons on the Right
+                Row {
+                    IconButton(
+                        onClick = {
+                            // Reset Logic: Clear events and save
+                            val updatedStopwatch = stopwatch.copy(events = emptyList())
+                            scope.launch { dao.upsertStopwatch(updatedStopwatch) }
+                        },
+                        shape = SegmentedButtonDefaults.itemShape(
+                            index = 0,
+                            count = 2
+                        ),
+//                        selected = index == selectedIndex,
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Refresh,
+                            contentDescription = "Reset",
+//                            tint = MaterialTheme.colorScheme.error
+                        )
+                    }
+
+                    IconButton(
+                        onClick = {
+                            // Reset Logic: Clear events and save
+                            val updatedStopwatch = stopwatch.copy(events = emptyList())
+                            scope.launch { dao.upsertStopwatch(updatedStopwatch) }
+                        },
+                        shape = SegmentedButtonDefaults.itemShape(
+                            index = 1,
+                            count = 2
+                        ),
+//                        selected = index == selectedIndex,
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Dehaze,
+                            contentDescription = "Reset",
+//                            tint = MaterialTheme.colorScheme.error
+                        )
+                    }
+//                    Button(
+//                        onClick = { /* Action 1 (e.g. Reset) */ },
+//                        modifier = Modifier.padding(end = 4.dp)
+//                    ) {
+//                        Text("Reset")
+//                    }
+//                    Button(
+//                        onClick = { /* Action 2 (already handled by Card onClick usually) */ }
+//                    ) {
+//                        Text(if (isRunning) "Pause" else "Resume")
+//                    }
+                }
+            }
+        }
     }
+//        Text(
+//            when {
+//                isNew -> "Start"
+//                isRunning -> "Pause"
+//                else -> "Resume"
+//            }
+//        )
 }
 
 //@Composable

@@ -25,7 +25,7 @@ import androidx.compose.material3.Button
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
-import io.github.aaalest.lanstopwatch.components.LiveTimerText
+import io.github.aaalest.lanstopwatch.components.StopwatchCard
 import io.github.aaalest.lanstopwatch.data.AppDatabase
 import io.github.aaalest.lanstopwatch.data.EventType
 import io.github.aaalest.lanstopwatch.data.TimeEvent
@@ -55,7 +55,7 @@ class MainActivity : ComponentActivity() {
 //                                    isFlipped = flashCardVisibilityController
 //                                )
 //                                Text("Add New Stopwatch ${System.currentTimeMillis() - stopwatch.start}")
-                                LiveTimerText(stopwatch, "Phone_01")
+                                StopwatchCard(stopwatch, "Phone_01")
                             }
 //                            FlashCardView(
 //                                cards.first(),
@@ -66,26 +66,7 @@ class MainActivity : ComponentActivity() {
                                 onClick = {
                                     scope.launch {
                                         dao.upsertStopwatch(
-                                            Stopwatch(
-                                                label = "New Stopwatch",
-//                                                events = listOf(
-//                                                    TimeEvent(
-//                                                        deviceId = "Phone_01",
-//                                                        eventType = EventType.RESUME,
-//                                                        timestamp = System.currentTimeMillis()
-//                                                    ),
-//                                                    TimeEvent(
-//                                                        deviceId = "Phone_01",
-//                                                        eventType = EventType.PAUSE,
-//                                                        timestamp = System.currentTimeMillis() + 5000
-//                                                    ),
-//                                                    TimeEvent(
-//                                                        deviceId = "Tablet_02",
-//                                                        eventType = EventType.RESUME,
-//                                                        timestamp = System.currentTimeMillis() + 10000
-//                                                    )
-//                                                )
-                                            )
+                                            Stopwatch(label = "New Stopwatch")
                                         )
                                     }
                                 }
