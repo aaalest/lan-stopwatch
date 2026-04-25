@@ -5,6 +5,7 @@ import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -28,13 +29,22 @@ import io.github.aaalest.lanstopwatch.data.EventType
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Dehaze
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.sp
 
 import io.github.aaalest.lanstopwatch.data.Stopwatch
 import io.github.aaalest.lanstopwatch.data.TimeEvent
@@ -43,17 +53,46 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import kotlin.text.append
 
 
-private fun formatTime(totalSeconds: Long): String {
-    val days = totalSeconds / 86400
-    val hours = (totalSeconds % 86400) / 3600
+@Composable
+private fun formatTime(totalSeconds: Long): AnnotatedString {
+    val hours = totalSeconds / 3600
     val minutes = (totalSeconds % 3600) / 60
     val seconds = totalSeconds % 60
 
-    return String.format("%02d:%02d:%02d:%02d", days, hours, minutes, seconds)
+    val numberStyle = SpanStyle(
+        fontSize = 32.sp,
+        fontWeight = FontWeight.ExtraBold,
+        color = MaterialTheme.colorScheme.primary
+    )
+    val unitStyle = SpanStyle(
+        fontSize = 16.sp,
+        fontWeight = FontWeight.Normal,
+        color = Color.Gray
+    )
+
+    return buildAnnotatedString {
+        // Hours
+        withStyle(style = numberStyle) { append(String.format("%02d", hours)) }
+        withStyle(style = unitStyle) { append("h ") }
+
+        // Minutes
+        withStyle(style = numberStyle) { append(String.format("%02d", minutes)) }
+        withStyle(style = unitStyle) { append("m ") }
+
+        // Seconds
+        withStyle(style = numberStyle) { append(String.format("%02d", seconds)) }
+        withStyle(style = unitStyle) { append("s") }
+    }
 }
 
+@Preview(showBackground = true)
+@Composable
+fun StopwatchCardPreview() {
+    StopwatchCard(stopwatch = Stopwatch(label = "New Stopwatch"), deviceId = "Some device")
+}
 
 @Composable
 fun StopwatchCard(stopwatch: Stopwatch, deviceId: String) {
@@ -71,21 +110,22 @@ fun StopwatchCard(stopwatch: Stopwatch, deviceId: String) {
     var elapsedSeconds by remember { mutableLongStateOf(0L) }
 
     val isNew = stopwatch.events.isEmpty()
-    val isRunning = stopwatch.events.lastOrNull()?.eventType == EventType.RESUME
+    var isRunning = stopwatch.events.lastOrNull()?.eventType == EventType.RESUME
 //    var elapsedMillis = 0.0
     var pausedMillis = 0L
 
     if (isNew) {
         elapsedSeconds = 0
     } else {
-        if (stopwatch.events.size > 3) {
+        if (stopwatch.events.size > 2) {
             stopwatch.events.subList(1, stopwatch.events.size)
                 .windowed(size = 2, step = 2) { (pause, resume) ->
                     pausedMillis += resume.timestamp - pause.timestamp
                 }
         }
 
-        LaunchedEffect(isRunning, displayText) {
+        LaunchedEffect(isRunning, stopwatch.events) {
+            isRunning = stopwatch.events.lastOrNull()?.eventType == EventType.RESUME
             if (isRunning) {
                 while (true) {
                     val now = System.currentTimeMillis()
@@ -103,123 +143,133 @@ fun StopwatchCard(stopwatch: Stopwatch, deviceId: String) {
     displayText = "${stopwatch.label}: ${elapsedSeconds}s; paused: ${pausedMillis / 1000}s; isRunning: $isRunning"
 
     Card(
-        onClick = {
-            // 1. Create the new event
-            val newEvent = if (isRunning) {
-                TimeEvent(EventType.PAUSE, System.currentTimeMillis(), deviceId)
-            } else {
-                TimeEvent(EventType.RESUME, System.currentTimeMillis(), deviceId)
-            }
-
-            // 2. Create a copy of the stopwatch with the NEW list
-            val updatedStopwatch = stopwatch.copy(
-                events = stopwatch.events + newEvent
-            )
-
-            // 3. Launch a coroutine to save to the database
-            scope.launch {
-                dao.upsertStopwatch(updatedStopwatch)
-            }
-        },
-        shape = RoundedCornerShape(if (isRunning) 16.dp else 32.dp),
+        shape = RoundedCornerShape(32.dp),
         modifier = Modifier
             .fillMaxWidth()
             .padding((16).dp)
     ) {
-        Row(
+        Column (
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+                .padding(16.dp)
+//                .fillMaxWidth()
+//                .padding(8.dp)
         ) {
-            Column(
-//                modifier = Modifier.weight(1f) // Takes up remaining space
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
+                Spacer(modifier = Modifier.width(4.dp))
+
                 Text(
                     text = stopwatch.label,
-//                    style = MaterialTheme.typography.titleLarge,
-//                    fontWeight = FontWeight.Bold
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier
+                        .align(Alignment.Bottom)
                 )
-            }
 
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row {
+                Spacer(modifier = Modifier.weight(1f))
+
+                Button(
+                    onClick = { /* TODO: Toggle options */ },
+                    contentPadding = PaddingValues(0.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    ),
+                    modifier = Modifier
+                        .align(Alignment.Top)
+                        .height(16.dp)
+                        .width(24.dp),
+                ) {
                     Icon(
-                        imageVector = if (isRunning) Icons.Default.Pause else Icons.Default.PlayArrow,
-                        contentDescription = "Pause Indicator",
+                        imageVector = Icons.Default.KeyboardArrowDown,
+                        contentDescription = "Options",
+//                        tint = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.size(16.dp)
                     )
+                }
+            } // Row
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Row (
+                verticalAlignment = Alignment.CenterVertically,
+//                horizontalArrangement = Arrangement.SpaceBetween,
+//                modifier = Modifier
+//                    .fillMaxWidth()
+            ) {
+                Spacer(modifier = Modifier.width(10.dp))
+                Text(
+                    text = formatTime(elapsedSeconds),
+                    //                    style = MaterialTheme.typography.headlineMedium,
+                    //                    fontWeight = FontWeight.ExtraBold,
+                    //                    color = if (isRunning) MaterialTheme.colorScheme.primary else Color.Gray
+                )
+//                Button(
+//                    onClick = {
+//                        val updatedStopwatch = stopwatch.copy(events = emptyList())
+//                        scope.launch { dao.upsertStopwatch(updatedStopwatch) }
+//                    },
+//                ) {
+//                    Icon(
+//                        imageVector = Icons.Default.Refresh,
+//                        contentDescription = "Reset",
+//                    )
+//                }
+
+                Spacer(modifier = Modifier.weight(1f))
+
+                FilledIconButton (
+                    onClick = {
+                        val updatedStopwatch = stopwatch.copy(events = emptyList())
+                        scope.launch { dao.upsertStopwatch(updatedStopwatch) }
+                    },
+//                        selected = index == selectedIndex,
+                    modifier = Modifier
+                        .align(Alignment.Bottom)
+                        .size(40.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Refresh,
+                        contentDescription = "Reset"
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(6.dp))
+
+                Button(
+                    onClick = {
+                        val newEvent = TimeEvent(
+                            if (isRunning) EventType.PAUSE else EventType.RESUME,
+                            System.currentTimeMillis(), deviceId
+                        )
+
+                        val updatedStopwatch = stopwatch.copy(
+                            events = stopwatch.events + newEvent
+                        )
+
+                        scope.launch {
+                            dao.upsertStopwatch(updatedStopwatch)
+                        }
+                    },
+//                    contentPadding = PaddingValues(horizontal = 32.dp, vertical = 16.dp),
+                    shape = RoundedCornerShape(if (isRunning) 16.dp else 32.dp),
+                    modifier = Modifier
+                        .height(64.dp) // Force a specific height
+                        .defaultMinSize(minWidth = 120.dp) // Ensure it's wide enough
+                ) {
                     Text(
-                        text = formatTime(elapsedSeconds),
-    //                    style = MaterialTheme.typography.headlineMedium,
-    //                    fontWeight = FontWeight.ExtraBold,
-    //                    color = if (isRunning) MaterialTheme.colorScheme.primary else Color.Gray
+                        when {
+                            isNew -> "Start"
+                            isRunning -> "Pause"
+                            else -> "Resume"
+                        }
                     )
                 }
-
-                // Two Buttons on the Right
-                Row {
-                    IconButton(
-                        onClick = {
-                            // Reset Logic: Clear events and save
-                            val updatedStopwatch = stopwatch.copy(events = emptyList())
-                            scope.launch { dao.upsertStopwatch(updatedStopwatch) }
-                        },
-                        shape = SegmentedButtonDefaults.itemShape(
-                            index = 0,
-                            count = 2
-                        ),
-//                        selected = index == selectedIndex,
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Refresh,
-                            contentDescription = "Reset",
-//                            tint = MaterialTheme.colorScheme.error
-                        )
-                    }
-
-                    IconButton(
-                        onClick = {
-                            // Reset Logic: Clear events and save
-                            val updatedStopwatch = stopwatch.copy(events = emptyList())
-                            scope.launch { dao.upsertStopwatch(updatedStopwatch) }
-                        },
-                        shape = SegmentedButtonDefaults.itemShape(
-                            index = 1,
-                            count = 2
-                        ),
-//                        selected = index == selectedIndex,
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Dehaze,
-                            contentDescription = "Reset",
-//                            tint = MaterialTheme.colorScheme.error
-                        )
-                    }
-//                    Button(
-//                        onClick = { /* Action 1 (e.g. Reset) */ },
-//                        modifier = Modifier.padding(end = 4.dp)
-//                    ) {
-//                        Text("Reset")
-//                    }
-//                    Button(
-//                        onClick = { /* Action 2 (already handled by Card onClick usually) */ }
-//                    ) {
-//                        Text(if (isRunning) "Pause" else "Resume")
-//                    }
-                }
-            }
-        }
-    }
-//        Text(
-//            when {
-//                isNew -> "Start"
-//                isRunning -> "Pause"
-//                else -> "Resume"
-//            }
-//        )
+            } // Row
+        } // Column
+    } // Card
 }
 
 //@Composable
