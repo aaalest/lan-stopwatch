@@ -1,12 +1,17 @@
 package io.github.aaalest.lanstopwatch.components
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
@@ -39,9 +44,14 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.geometry.isEmpty
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.semantics.text
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.sp
@@ -103,6 +113,25 @@ fun StopwatchCard(stopwatch: Stopwatch, deviceId: String) {
     val db = remember { AppDatabase.getDatabase(context.applicationContext) }
     val dao = db.stopwatchDao()
 
+    var editedLabel by remember { mutableStateOf(stopwatch.label) }
+    val focusManager = LocalFocusManager.current
+    val isKeyboardOpen = WindowInsets.ime.getBottom(LocalDensity.current) > 0
+
+    // Check if the user has actually changed the text
+    val isLabelChanged = editedLabel != stopwatch.label
+
+    LaunchedEffect(isKeyboardOpen) {
+        if (!isKeyboardOpen) {
+            // If the keyboard is hidden (by back gesture or otherwise), kill the cursor
+            focusManager.clearFocus()
+        }
+    }
+
+    // Keep the local state in sync if the stopwatch object changes from the DB
+//    LaunchedEffect(stopwatch.label) {
+//        if (!isEditing) editedLabel = stopwatch.label
+//    }
+
 //    stopwatch.events = stopwatch.events.ifEmpty {
 //        listOf(TimeEvent(EventType.START, System.currentTimeMillis(), deviceId))
 //    } // If empty, add a START event
@@ -142,11 +171,21 @@ fun StopwatchCard(stopwatch: Stopwatch, deviceId: String) {
     }
     displayText = "${stopwatch.label}: ${elapsedSeconds}s; paused: ${pausedMillis / 1000}s; isRunning: $isRunning"
 
+    BackHandler(enabled = true) {
+        focusManager.clearFocus()
+    }
+
     Card(
         shape = RoundedCornerShape(32.dp),
         modifier = Modifier
             .fillMaxWidth()
             .padding((16).dp)
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null // No ripple effect
+            ) {
+                focusManager.clearFocus()
+            }
     ) {
         Column (
             modifier = Modifier
@@ -160,12 +199,40 @@ fun StopwatchCard(stopwatch: Stopwatch, deviceId: String) {
             ) {
                 Spacer(modifier = Modifier.width(4.dp))
 
-                Text(
-                    text = stopwatch.label,
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
+                BasicTextField(
+                    value = editedLabel,
+                    onValueChange = { newValue ->
+                        editedLabel = newValue
+                        // Update database on every change
+                        // TODO: add a floating confirm and undo buttons instead of auto updating
+                        // TODO: don't update empty editedLabel
+                        scope.launch {
+                            dao.upsertStopwatch(stopwatch.copy(label = newValue))
+                        }
+                    },
+//                    keyboardOptions = KeyboardOptions(
+//                        imeAction = ImeAction.Done // Changes the keyboard button to a Checkmark
+//                    ),
+//                    keyboardActions = KeyboardActions(
+//                        onDone = {
+//                            // 1. Hide the keyboard AND remove the cursor
+//                            focusManager.clearFocus()
+//
+//                            // 2. Save your data to the database
+//                            scope.launch {
+//                                dao.upsertStopwatch(stopwatch.copy(label = editedLabel))
+//                            }
+//                        }
+//                    ),
+                    textStyle = MaterialTheme.typography.titleLarge.copy(
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    ),
                     modifier = Modifier
-                        .align(Alignment.Bottom)
+                        .width(IntrinsicSize.Min)
+                        .align(Alignment.Bottom),
+                    singleLine = true,
+                    cursorBrush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.primary)
                 )
 
                 Spacer(modifier = Modifier.weight(1f))
