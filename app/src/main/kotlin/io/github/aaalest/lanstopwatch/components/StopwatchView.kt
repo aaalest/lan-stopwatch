@@ -63,6 +63,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import kotlin.collections.plus
 import kotlin.text.append
 
 
@@ -95,6 +96,84 @@ private fun formatTime(totalSeconds: Long): AnnotatedString {
         // Seconds
         withStyle(style = numberStyle) { append(String.format("%02d", seconds)) }
         withStyle(style = unitStyle) { append("s") }
+    }
+}
+
+@Composable
+fun StopwatchLabel(
+    editedLabel: String,
+    onValueChange: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    BasicTextField(
+        value = editedLabel,
+        onValueChange = { newValue -> onValueChange(newValue) },
+//                    keyboardOptions = KeyboardOptions(
+//                        imeAction = ImeAction.Done // Changes the keyboard button to a Checkmark
+//                    ),
+//                    keyboardActions = KeyboardActions(
+//                        onDone = {
+//                            // 1. Hide the keyboard AND remove the cursor
+//                            focusManager.clearFocus()
+//
+//                            // 2. Save your data to the database
+//                            scope.launch {
+//                                dao.upsertStopwatch(stopwatch.copy(label = editedLabel))
+//                            }
+//                        }
+//                    ),
+        textStyle = MaterialTheme.typography.titleLarge.copy(
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface
+        ),
+        singleLine = true,
+        cursorBrush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.primary)
+    )
+}
+
+
+@Composable
+fun StopwatchTimeDisplay(
+    elapsedSeconds: Long,
+    modifier: Modifier = Modifier
+) {
+    Text(
+        text = formatTime(elapsedSeconds),
+        modifier = modifier
+    )
+}
+
+@Composable
+fun StopwatchResetTime(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    FilledIconButton(
+        onClick = onClick,
+        modifier = Modifier
+    ) {
+        Icon(
+            imageVector = Icons.Default.Refresh,
+            contentDescription = "Reset"
+        )
+    }
+}
+
+
+@Composable
+fun StopwatchRunToggleButton(
+    label: String,
+    onClick: () -> Unit,
+    shape: RoundedCornerShape,
+    modifier: Modifier = Modifier
+) {
+    Button(
+        onClick = onClick,
+//                    contentPadding = PaddingValues(horizontal = 32.dp, vertical = 16.dp),
+        shape = shape,
+        modifier = modifier
+    ) {
+        Text(label)
     }
 }
 
@@ -199,40 +278,21 @@ fun StopwatchCard(stopwatch: Stopwatch, deviceId: String) {
             ) {
                 Spacer(modifier = Modifier.width(4.dp))
 
-                BasicTextField(
-                    value = editedLabel,
+                StopwatchLabel(
+                    editedLabel = editedLabel,
                     onValueChange = { newValue ->
                         editedLabel = newValue
-                        // Update database on every change
+
                         // TODO: add a floating confirm and undo buttons instead of auto updating
                         // TODO: don't update empty editedLabel
-                        scope.launch {
-                            dao.upsertStopwatch(stopwatch.copy(label = newValue))
-                        }
-                    },
-//                    keyboardOptions = KeyboardOptions(
-//                        imeAction = ImeAction.Done // Changes the keyboard button to a Checkmark
-//                    ),
-//                    keyboardActions = KeyboardActions(
-//                        onDone = {
-//                            // 1. Hide the keyboard AND remove the cursor
-//                            focusManager.clearFocus()
-//
-//                            // 2. Save your data to the database
-//                            scope.launch {
-//                                dao.upsertStopwatch(stopwatch.copy(label = editedLabel))
-//                            }
+                        // Update database on every change
+//                        scope.launch {
+//                            dao.upsertStopwatch(stopwatch.copy(label = newValue))
 //                        }
-//                    ),
-                    textStyle = MaterialTheme.typography.titleLarge.copy(
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    ),
+                    },
                     modifier = Modifier
                         .width(IntrinsicSize.Min)
                         .align(Alignment.Bottom),
-                    singleLine = true,
-                    cursorBrush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.primary)
                 )
 
                 Spacer(modifier = Modifier.weight(1f))
@@ -267,45 +327,29 @@ fun StopwatchCard(stopwatch: Stopwatch, deviceId: String) {
 //                    .fillMaxWidth()
             ) {
                 Spacer(modifier = Modifier.width(10.dp))
-                Text(
-                    text = formatTime(elapsedSeconds),
-                    //                    style = MaterialTheme.typography.headlineMedium,
-                    //                    fontWeight = FontWeight.ExtraBold,
-                    //                    color = if (isRunning) MaterialTheme.colorScheme.primary else Color.Gray
-                )
-//                Button(
-//                    onClick = {
-//                        val updatedStopwatch = stopwatch.copy(events = emptyList())
-//                        scope.launch { dao.upsertStopwatch(updatedStopwatch) }
-//                    },
-//                ) {
-//                    Icon(
-//                        imageVector = Icons.Default.Refresh,
-//                        contentDescription = "Reset",
-//                    )
-//                }
+
+                StopwatchTimeDisplay(elapsedSeconds)
 
                 Spacer(modifier = Modifier.weight(1f))
 
-                FilledIconButton (
+                StopwatchResetTime(
                     onClick = {
                         val updatedStopwatch = stopwatch.copy(events = emptyList())
                         scope.launch { dao.upsertStopwatch(updatedStopwatch) }
                     },
-//                        selected = index == selectedIndex,
                     modifier = Modifier
                         .align(Alignment.Bottom)
                         .size(40.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Refresh,
-                        contentDescription = "Reset"
-                    )
-                }
+                )
 
                 Spacer(modifier = Modifier.width(6.dp))
 
-                Button(
+                StopwatchRunToggleButton(
+                    label = when {
+                        isNew -> "Start"
+                        isRunning -> "Pause"
+                        else -> "Resume"
+                    },
                     onClick = {
                         val newEvent = TimeEvent(
                             if (isRunning) EventType.PAUSE else EventType.RESUME,
@@ -320,69 +364,12 @@ fun StopwatchCard(stopwatch: Stopwatch, deviceId: String) {
                             dao.upsertStopwatch(updatedStopwatch)
                         }
                     },
-//                    contentPadding = PaddingValues(horizontal = 32.dp, vertical = 16.dp),
                     shape = RoundedCornerShape(if (isRunning) 16.dp else 32.dp),
                     modifier = Modifier
                         .height(64.dp) // Force a specific height
                         .defaultMinSize(minWidth = 120.dp) // Ensure it's wide enough
-                ) {
-                    Text(
-                        when {
-                            isNew -> "Start"
-                            isRunning -> "Pause"
-                            else -> "Resume"
-                        }
-                    )
-                }
+                )
             } // Row
         } // Column
     } // Card
 }
-
-//@Composable
-//fun StopwatchView(
-//    stopwatch: Stopwatch,
-//)
-
-//@Composable
-//fun StopwatchView(
-//    card: Stopwatch,
-//    isFlipped: VisibilityController,
-//) {
-//
-//    Card(
-//        onClick = { isFlipped.toggle() },
-//        shape = RoundedCornerShape(32.dp),
-//        modifier = Modifier
-//            .fillMaxWidth()
-//            .padding((12 * 2).dp)
-//    ) {
-//        Column(
-//            horizontalAlignment = Alignment.CenterHorizontally,
-//            verticalArrangement = Arrangement.Center,
-//            modifier = Modifier
-//                .fillMaxSize()
-//                .padding(16.dp)
-//        ) {
-//            // Display Word or Definition based on state
-//            val contentText = if (isFlipped.isVisible) card.definition else card.word
-//
-//            Text(
-//                text = contentText,
-//                style = MaterialTheme.typography.headlineMedium,
-//                textAlign = TextAlign.Center
-//            )
-//
-//            Spacer(modifier = Modifier.height(16.dp))
-//
-//            // Optional: Show the other side subtly when flipped
-//            AnimatedVisibility(visible = isFlipped.isVisible) {
-//                Text(
-//                    text = "Tap to see the word again.",
-//                    style = MaterialTheme.typography.bodySmall,
-//                    color = Color.Gray
-//                )
-//            }
-//        }
-//    }
-//}
