@@ -14,6 +14,8 @@
         <activity
             android:name=".MainActivity"
             android:exported="true"
+            android:windowSoftInputMode="adjustResize"
+            android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|keyboardHidden|density|fontScale"
             android:label="@string/app_name"
             android:theme="@style/Theme.LanStopwatch">
             <intent-filter>
