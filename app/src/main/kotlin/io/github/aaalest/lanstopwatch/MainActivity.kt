@@ -45,8 +45,12 @@ class MainActivity : ComponentActivity() {
                 val scope = rememberCoroutineScope()
 
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    val flashCardVisibilityController = VisibilityController()
+//                    val stopwatchEditActionController = VisibilityController()
 
+//                    Box(Modifier
+//                        .fillMaxWidth()
+//                        .fillMaxHeight()
+//                    ) {
                     Column(Modifier.padding(innerPadding)) {
                         if (stopwatches.isNotEmpty()) {
                             stopwatches.forEach { stopwatch ->
@@ -54,7 +58,7 @@ class MainActivity : ComponentActivity() {
 //                                    card = stopwatch,
 //                                    isFlipped = flashCardVisibilityController
 //                                )
-//                                Text("Add New Stopwatch ${System.currentTimeMillis() - stopwatch.start}")
+//                                    Text("Add New Stopwatch ${System.currentTimeMillis() - stopwatch.start}")
                                 StopwatchCard(stopwatch, "Phone_01")
                             }
 //                            FlashCardView(
@@ -73,16 +77,24 @@ class MainActivity : ComponentActivity() {
                             ) {
                                 Text("Add New Stopwatch")
                             }
-//                            Text(
-//                                "No cards. Tap to add sample data.",
-//                                modifier = Modifier.padding(16.dp).clickable {
-//                                    scope.launch {
-//                                        sampleCards.forEach { dao.upsertFlashcard(it) }
+//                                Text(
+//                                    "No cards. Tap to add sample data.",
+//                                    modifier = Modifier.padding(16.dp).clickable {
+//                                        scope.launch {
+//                                            sampleCards.forEach { dao.upsertFlashcard(it) }
+//                                        }
 //                                    }
-//                                }
-//                            )
+//                                )
                         }
-                    }
+                    } // Column
+
+//                        FloatingEditActionButtons(
+//                            stopwatchEditActionController,
+//                            onUndo = {},
+//                            onConfirm = {},
+//                            modifier = Modifier.windowInsetsPadding(WindowInsets.navigationBars.union(WindowInsets.ime))  // picks the highest value
+//                        )
+//                    } // Box
                 }
             }
         }

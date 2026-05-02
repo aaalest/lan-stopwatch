@@ -43,8 +43,21 @@ import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.isEmpty
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.semantics.text
@@ -127,7 +140,8 @@ fun StopwatchLabel(
             color = MaterialTheme.colorScheme.onSurface
         ),
         singleLine = true,
-        cursorBrush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.primary)
+        cursorBrush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.primary),
+        modifier = modifier
     )
 }
 
@@ -150,7 +164,7 @@ fun StopwatchResetTime(
 ) {
     FilledIconButton(
         onClick = onClick,
-        modifier = Modifier
+        modifier = modifier
     ) {
         Icon(
             imageVector = Icons.Default.Refresh,
@@ -192,17 +206,24 @@ fun StopwatchCard(stopwatch: Stopwatch, deviceId: String) {
     val db = remember { AppDatabase.getDatabase(context.applicationContext) }
     val dao = db.stopwatchDao()
 
-    var editedLabel by remember { mutableStateOf(stopwatch.label) }
     val focusManager = LocalFocusManager.current
-    val isKeyboardOpen = WindowInsets.ime.getBottom(LocalDensity.current) > 0
+    val configuration = LocalConfiguration.current
 
-    // Check if the user has actually changed the text
-    val isLabelChanged = editedLabel != stopwatch.label
+    var editedLabel by remember { mutableStateOf(stopwatch.label) }
+    val isKeyboardOpen = WindowInsets.ime.getBottom(LocalDensity.current) > 0
+    var lastOrientation by rememberSaveable { mutableIntStateOf(configuration.orientation) }
 
     LaunchedEffect(isKeyboardOpen) {
+        val isRotating = lastOrientation != configuration.orientation
+        lastOrientation = configuration.orientation
+
         if (!isKeyboardOpen) {
-            // If the keyboard is hidden (by back gesture or otherwise), kill the cursor
-            focusManager.clearFocus()
+            if (isRotating) {
+//                println("IME: Hidden due to rotation")
+            } else {
+                focusManager.clearFocus()
+//                println("IME: Hidden by User Gesture")
+            }
         }
     }
 
@@ -250,21 +271,11 @@ fun StopwatchCard(stopwatch: Stopwatch, deviceId: String) {
     }
     displayText = "${stopwatch.label}: ${elapsedSeconds}s; paused: ${pausedMillis / 1000}s; isRunning: $isRunning"
 
-    BackHandler(enabled = true) {
-        focusManager.clearFocus()
-    }
-
     Card(
         shape = RoundedCornerShape(32.dp),
         modifier = Modifier
             .fillMaxWidth()
             .padding((16).dp)
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null // No ripple effect
-            ) {
-                focusManager.clearFocus()
-            }
     ) {
         Column (
             modifier = Modifier
@@ -292,7 +303,7 @@ fun StopwatchCard(stopwatch: Stopwatch, deviceId: String) {
                     },
                     modifier = Modifier
                         .width(IntrinsicSize.Min)
-                        .align(Alignment.Bottom),
+                        .align(Alignment.Bottom)
                 )
 
                 Spacer(modifier = Modifier.weight(1f))
