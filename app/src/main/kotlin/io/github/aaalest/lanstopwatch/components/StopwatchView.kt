@@ -1,21 +1,13 @@
 package io.github.aaalest.lanstopwatch.components
 
-import androidx.activity.compose.BackHandler
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.animateContentSize
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -27,57 +19,35 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import io.github.aaalest.lanstopwatch.data.AppDatabase
 import io.github.aaalest.lanstopwatch.data.EventType
 
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Dehaze
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.text.input.TextFieldValue
-import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.geometry.isEmpty
-import androidx.compose.ui.input.key.Key
-import androidx.compose.ui.input.key.key
-import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.semantics.text
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.sp
 
 import io.github.aaalest.lanstopwatch.data.Stopwatch
 import io.github.aaalest.lanstopwatch.data.TimeEvent
-import io.github.aaalest.lanstopwatch.utils.VisibilityController
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlin.collections.plus
-import kotlin.text.append
 
 
 @Composable
@@ -173,6 +143,26 @@ fun StopwatchResetTime(
     }
 }
 
+@Composable
+fun StopwatchSettingsIcon(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    FilledIconButton(
+        onClick = onClick,
+//        colors = IconButtonDefaults.filledIconButtonColors(
+//            containerColor = MaterialTheme.colorScheme.primary,
+//            contentColor = MaterialTheme.colorScheme.onPrimary
+//        ),
+        modifier = modifier
+    ) {
+        Icon(
+            imageVector = Icons.Default.Settings,
+            contentDescription = "Settings"
+        )
+    }
+}
+
 
 @Composable
 fun StopwatchRunToggleButton(
@@ -191,6 +181,20 @@ fun StopwatchRunToggleButton(
     }
 }
 
+
+@Composable
+fun StopwatchRunToggleIcon(
+    isRunning: Boolean,
+//    shape: RoundedCornerShape,
+    modifier: Modifier = Modifier
+) {
+    Icon(
+        imageVector = if (isRunning) Icons.Default.Stop else Icons.Default.PlayArrow,
+        contentDescription = "Run status indicator",
+        modifier = modifier
+    )
+}
+
 @Preview(showBackground = true)
 @Composable
 fun StopwatchCardPreview() {
@@ -199,7 +203,6 @@ fun StopwatchCardPreview() {
 
 @Composable
 fun StopwatchCard(stopwatch: Stopwatch, deviceId: String) {
-//    val scope = androidx.compose.runtime.rememberCoroutineScope()
     val scope = androidx.compose.runtime.rememberCoroutineScope()
 
     val context = androidx.compose.ui.platform.LocalContext.current
@@ -272,115 +275,73 @@ fun StopwatchCard(stopwatch: Stopwatch, deviceId: String) {
     displayText = "${stopwatch.label}: ${elapsedSeconds}s; paused: ${pausedMillis / 1000}s; isRunning: $isRunning"
 
     Card(
-        shape = RoundedCornerShape(32.dp),
+        onClick = {
+            val newEvent = TimeEvent(
+                if (isRunning) EventType.PAUSE else EventType.RESUME,
+                System.currentTimeMillis(), deviceId
+            )
+
+            val updatedStopwatch = stopwatch.copy(
+                events = stopwatch.events + newEvent
+            )
+
+            scope.launch {
+                dao.upsertStopwatch(updatedStopwatch)
+            }
+        },
+        shape = RoundedCornerShape(if (isRunning) 16.dp else 48.dp),
+        colors = if (isRunning) CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer,
+            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+        ) else CardDefaults.cardColors(),
         modifier = Modifier
             .fillMaxWidth()
             .padding((16).dp)
     ) {
-        Column (
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
             modifier = Modifier
                 .padding(16.dp)
-//                .fillMaxWidth()
-//                .padding(8.dp)
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Spacer(modifier = Modifier.width(4.dp))
+            Spacer(modifier = Modifier.width(4.dp))
 
-                StopwatchLabel(
-                    editedLabel = editedLabel,
-                    onValueChange = { newValue ->
-                        editedLabel = newValue
+            StopwatchLabel(
+                editedLabel = editedLabel,
+                onValueChange = { newValue ->
+                    editedLabel = newValue
 
-                        // TODO: add a floating confirm and undo buttons instead of auto updating
-                        // TODO: don't update empty editedLabel
-                        // Update database on every change
+                    // TODO: add a floating confirm and undo buttons instead of auto updating
+                    // TODO: don't update empty editedLabel
+                    // Update database on every change
 //                        scope.launch {
 //                            dao.upsertStopwatch(stopwatch.copy(label = newValue))
 //                        }
-                    },
-                    modifier = Modifier
-                        .width(IntrinsicSize.Min)
-                        .align(Alignment.Bottom)
-                )
+                },
+                modifier = Modifier
+                    .width(IntrinsicSize.Min)
+//                        .align(Alignment.Bottom)
+            )
 
-                Spacer(modifier = Modifier.weight(1f))
+            Spacer(modifier = Modifier.weight(1f))
 
-                Button(
-                    onClick = { /* TODO: Toggle options */ },
-                    contentPadding = PaddingValues(0.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                    ),
-                    modifier = Modifier
-                        .align(Alignment.Top)
-                        .height(16.dp)
-                        .width(24.dp),
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.KeyboardArrowDown,
-                        contentDescription = "Options",
-//                        tint = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.size(16.dp)
-                    )
-                }
-            } // Row
+            StopwatchRunToggleIcon(
+                isRunning
+            )
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.width(16.dp))
 
-            Row (
-                verticalAlignment = Alignment.CenterVertically,
-//                horizontalArrangement = Arrangement.SpaceBetween,
-//                modifier = Modifier
-//                    .fillMaxWidth()
-            ) {
-                Spacer(modifier = Modifier.width(10.dp))
-
-                StopwatchTimeDisplay(elapsedSeconds)
-
-                Spacer(modifier = Modifier.weight(1f))
-
-                StopwatchResetTime(
-                    onClick = {
-                        val updatedStopwatch = stopwatch.copy(events = emptyList())
-                        scope.launch { dao.upsertStopwatch(updatedStopwatch) }
-                    },
-                    modifier = Modifier
-                        .align(Alignment.Bottom)
-                        .size(40.dp)
-                )
-
-                Spacer(modifier = Modifier.width(6.dp))
-
-                StopwatchRunToggleButton(
-                    label = when {
-                        isNew -> "Start"
-                        isRunning -> "Pause"
-                        else -> "Resume"
-                    },
-                    onClick = {
-                        val newEvent = TimeEvent(
-                            if (isRunning) EventType.PAUSE else EventType.RESUME,
-                            System.currentTimeMillis(), deviceId
-                        )
-
-                        val updatedStopwatch = stopwatch.copy(
-                            events = stopwatch.events + newEvent
-                        )
-
-                        scope.launch {
-                            dao.upsertStopwatch(updatedStopwatch)
-                        }
-                    },
-                    shape = RoundedCornerShape(if (isRunning) 16.dp else 32.dp),
-                    modifier = Modifier
-                        .height(64.dp) // Force a specific height
-                        .defaultMinSize(minWidth = 120.dp) // Ensure it's wide enough
-                )
-            } // Row
-        } // Column
+            StopwatchSettingsIcon(
+                onClick = {
+                    val updatedStopwatch = stopwatch.copy(events = emptyList())
+                    scope.launch { dao.upsertStopwatch(updatedStopwatch) }
+                },
+                modifier = Modifier
+//                        .align(Alignment.Center)
+                    .size(40.dp)
+//                        .height(16.dp)
+//                        .width(24.dp),
+            )
+        } // Row
     } // Card
 }
