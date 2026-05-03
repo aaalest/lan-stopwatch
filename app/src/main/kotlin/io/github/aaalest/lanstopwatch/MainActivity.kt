@@ -16,7 +16,6 @@ import androidx.compose.ui.unit.dp
 
 import io.github.aaalest.lanstopwatch.ui.theme.LanStopwatchTheme
 //import io.github.aaalest.lanstopwatch.components.StopwatchView
-import io.github.aaalest.lanstopwatch.utils.VisibilityController
 import io.github.aaalest.lanstopwatch.data.Stopwatch
 
 import androidx.compose.foundation.clickable

@@ -1,8 +1,6 @@
 package io.github.aaalest.lanstopwatch.components
 
-import androidx.activity.result.launch
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.copy
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -10,7 +8,6 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -24,19 +21,19 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import io.github.aaalest.lanstopwatch.utils.VisibilityController
+import io.github.aaalest.lanstopwatch.utils.ToggleController
 
 
 @Composable
 fun BoxScope.FloatingEditActionButtons(
-    visibilityController: VisibilityController,
+    visibilityController: ToggleController,
     onUndo: () -> Unit,
     onConfirm: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    visibilityController.show()
+    visibilityController.turnOn()
     AnimatedVisibility(
-        visible = visibilityController.isVisible,
+        visible = visibilityController.isActive,
         enter = fadeIn() + expandVertically(),
         exit = fadeOut() + shrinkVertically(),
         modifier = modifier
