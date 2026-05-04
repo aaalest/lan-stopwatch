@@ -45,6 +45,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.sp
 
 import io.github.aaalest.lanstopwatch.tracker.data.Stopwatch
+import io.github.aaalest.lanstopwatch.tracker.data.StopwatchWithEvents
 import io.github.aaalest.lanstopwatch.tracker.data.TimeEvent
 import kotlinx.coroutines.launch
 import kotlin.collections.plus
@@ -198,16 +199,19 @@ fun StopwatchRunToggleIcon(
 @Preview(showBackground = true)
 @Composable
 fun StopwatchCardPreview() {
-    StopwatchCard(stopwatch = Stopwatch(label = "New Stopwatch"), deviceId = "Some device")
+    StopwatchCard(stopwatchWithEvents = StopwatchWithEvents(stopwatch = Stopwatch(label = "Test")), deviceId = "Some device")
 }
 
 @Composable
-fun StopwatchCard(stopwatch: Stopwatch, deviceId: String) {
+fun StopwatchCard(stopwatchWithEvents: StopwatchWithEvents, deviceId: String) {
     val scope = androidx.compose.runtime.rememberCoroutineScope()
 
     val context = androidx.compose.ui.platform.LocalContext.current
     val db = remember { AppDatabase.getDatabase(context.applicationContext) }
     val dao = db.stopwatchDao()
+
+    val stopwatch = stopwatchWithEvents.stopwatch
+    val events = stopwatchWithEvents.events
 
     val focusManager = LocalFocusManager.current
     val configuration = LocalConfiguration.current
@@ -241,33 +245,33 @@ fun StopwatchCard(stopwatch: Stopwatch, deviceId: String) {
     var displayText by remember { mutableStateOf("") }
     var elapsedSeconds by remember { mutableLongStateOf(0L) }
 
-    val isNew = stopwatch.events.isEmpty()
-    var isRunning = stopwatch.events.lastOrNull()?.eventType == EventType.RESUME
+    val isNew = events.isEmpty()
+    var isRunning = events.lastOrNull()?.eventType == EventType.RESUME
 //    var elapsedMillis = 0.0
     var pausedMillis = 0L
 
     if (isNew) {
         elapsedSeconds = 0
     } else {
-        if (stopwatch.events.size > 2) {
-            stopwatch.events.subList(1, stopwatch.events.size)
+        if (events.size > 2) {
+            events.subList(1, events.size)
                 .windowed(size = 2, step = 2) { (pause, resume) ->
                     pausedMillis += resume.timestamp - pause.timestamp
                 }
         }
 
-        LaunchedEffect(isRunning, stopwatch.events) {
-            isRunning = stopwatch.events.lastOrNull()?.eventType == EventType.RESUME
+        LaunchedEffect(isRunning, events) {
+            isRunning = events.lastOrNull()?.eventType == EventType.RESUME
             if (isRunning) {
                 while (true) {
                     val now = System.currentTimeMillis()
-                    val elapsedMillis = now - stopwatch.events[0].timestamp - pausedMillis
+                    val elapsedMillis = now - events[0].timestamp - pausedMillis
                     elapsedSeconds = elapsedMillis / 1000
                     println(displayText)
                     kotlinx.coroutines.delay(1000 - (System.currentTimeMillis() % 1000))
                 }
             } else {
-                val elapsedMillis = stopwatch.events.last().timestamp - stopwatch.events[0].timestamp - pausedMillis
+                val elapsedMillis = events.last().timestamp - events[0].timestamp - pausedMillis
                 elapsedSeconds = elapsedMillis / 1000
             }
         }
@@ -276,17 +280,16 @@ fun StopwatchCard(stopwatch: Stopwatch, deviceId: String) {
 
     Card(
         onClick = {
-            val newEvent = TimeEvent(
-                if (isRunning) EventType.PAUSE else EventType.RESUME,
-                System.currentTimeMillis(), deviceId
-            )
 
-            val updatedStopwatch = stopwatch.copy(
-                events = stopwatch.events + newEvent
+            val newEvent = TimeEvent(
+                stopwatchId = stopwatch.id,
+                eventType = if (isRunning) EventType.PAUSE else EventType.RESUME,
+                timestamp = System.currentTimeMillis(),
+                deviceId = deviceId
             )
 
             scope.launch {
-                dao.upsertStopwatch(updatedStopwatch)
+                dao.insertEvent(newEvent)
             }
         },
         shape = RoundedCornerShape(if (isRunning) 16.dp else 48.dp),
@@ -333,8 +336,7 @@ fun StopwatchCard(stopwatch: Stopwatch, deviceId: String) {
 
             StopwatchSettingsIcon(
                 onClick = {
-                    val updatedStopwatch = stopwatch.copy(events = emptyList())
-                    scope.launch { dao.upsertStopwatch(updatedStopwatch) }
+                    scope.launch { dao.deleteEventsForStopwatch(stopwatch.id) }
                 },
                 modifier = Modifier
 //                        .align(Alignment.Center)

@@ -6,28 +6,22 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverter
 import androidx.room.TypeConverters
-import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
 
 
-class Converters {
-    private val gson = Gson()
+class TrackerConverters {
+    @TypeConverter
+    fun fromEventType(value: EventType) = value.name
 
     @TypeConverter
-    fun fromTimeEventList(value: List<TimeEvent>): String {
-        return gson.toJson(value)
-    }
-
-    @TypeConverter
-    fun toTimeEventList(value: String): List<TimeEvent> {
-        val listType = object : TypeToken<List<TimeEvent>>() {}.type
-        return gson.fromJson(value, listType)
-    }
+    fun toEventType(value: String) = enumValueOf<EventType>(value)
 }
 
 
-@Database(entities = [Stopwatch::class], version = 1)
-@TypeConverters(Converters::class) // Add this line
+@Database(
+    entities = [Stopwatch::class, TimeEvent::class],
+    version = 1
+)
+@TypeConverters(TrackerConverters::class) // Add this line
 abstract class AppDatabase : RoomDatabase() {
     abstract fun stopwatchDao(): StopwatchDao
 
