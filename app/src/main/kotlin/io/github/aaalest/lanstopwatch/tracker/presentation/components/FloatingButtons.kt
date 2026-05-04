@@ -47,7 +47,7 @@ fun BoxScope.FloatingEditActionButtons(
             // UNDO - Small FAB style
             SmallFloatingActionButton(
                 onClick = { onUndo() },
-//                    editedLabel = stopwatch.label
+//                    editedLabel = tracker.label
 //                    focusManager.clearFocus()
 //                },
                 containerColor = MaterialTheme.colorScheme.errorContainer,

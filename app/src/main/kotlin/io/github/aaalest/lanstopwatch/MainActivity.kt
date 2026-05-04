@@ -12,14 +12,14 @@ import androidx.compose.ui.Modifier
 
 import io.github.aaalest.lanstopwatch.core.ui.theme.LanStopwatchTheme
 //import io.github.aaalest.lanstopwatch.components.StopwatchView
-import io.github.aaalest.lanstopwatch.tracker.data.Stopwatch
+import io.github.aaalest.lanstopwatch.tracker.data.Tracker
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.Button
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
-import io.github.aaalest.lanstopwatch.tracker.presentation.components.StopwatchCard
+import io.github.aaalest.lanstopwatch.tracker.presentation.components.TrackerCard
 import io.github.aaalest.lanstopwatch.tracker.data.AppDatabase
 //import io.github.aaalest.lanstopwatch.data.sampleCards
 import kotlinx.coroutines.launch
@@ -28,12 +28,12 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val db = AppDatabase.getDatabase(applicationContext)
-        val dao = db.stopwatchDao()
+        val dao = db.trackerDao()
 
         enableEdgeToEdge()
         setContent {
             LanStopwatchTheme {
-                val stopwatchesWithEvents by dao.getAllStopwatches().collectAsState(initial = emptyList())
+                val trackersWithEvents by dao.getAllTrackers().collectAsState(initial = emptyList())
                 val scope = rememberCoroutineScope()
 
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
@@ -44,14 +44,14 @@ class MainActivity : ComponentActivity() {
 //                        .fillMaxHeight()
 //                    ) {
                     Column(Modifier.padding(innerPadding)) {
-                        if (stopwatchesWithEvents.isNotEmpty()) {
-                            stopwatchesWithEvents.forEach { stopwatchWithEvents ->
+                        if (trackersWithEvents.isNotEmpty()) {
+                            trackersWithEvents.forEach { trackerWithEvents ->
 //                                StopwatchView(
 //                                    card = stopwatch,
 //                                    isFlipped = flashCardVisibilityController
 //                                )
 //                                    Text("Add New Stopwatch ${System.currentTimeMillis() - stopwatch.start}")
-                                StopwatchCard(stopwatchWithEvents, "Phone_01")
+                                TrackerCard(trackerWithEvents, "Phone_01")
                             }
 //                            FlashCardView(
 //                                cards.first(),
@@ -61,13 +61,13 @@ class MainActivity : ComponentActivity() {
                             Button(
                                 onClick = {
                                     scope.launch {
-                                        dao.insertStopwatch(
-                                            Stopwatch(label = "New Stopwatch")
+                                        dao.insertTracker(
+                                            Tracker(label = "New Tracker")
                                         )
                                     }
                                 }
                             ) {
-                                Text("Add New Stopwatch")
+                                Text("Add New Tracker")
                             }
 //                                Text(
 //                                    "No cards. Tap to add sample data.",

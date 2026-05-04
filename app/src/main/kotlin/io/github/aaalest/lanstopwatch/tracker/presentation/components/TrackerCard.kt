@@ -1,6 +1,5 @@
 package io.github.aaalest.lanstopwatch.tracker.presentation.components
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -44,11 +43,10 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.sp
 
-import io.github.aaalest.lanstopwatch.tracker.data.Stopwatch
-import io.github.aaalest.lanstopwatch.tracker.data.StopwatchWithEvents
+import io.github.aaalest.lanstopwatch.tracker.data.Tracker
+import io.github.aaalest.lanstopwatch.tracker.data.TrackerWithEvents
 import io.github.aaalest.lanstopwatch.tracker.data.TimeEvent
 import kotlinx.coroutines.launch
-import kotlin.collections.plus
 
 
 @Composable
@@ -84,7 +82,7 @@ private fun formatTime(totalSeconds: Long): AnnotatedString {
 }
 
 @Composable
-fun StopwatchLabel(
+fun TrackerLabel(
     editedLabel: String,
     onValueChange: (String) -> Unit,
     modifier: Modifier = Modifier
@@ -118,7 +116,7 @@ fun StopwatchLabel(
 
 
 @Composable
-fun StopwatchTimeDisplay(
+fun TrackerTimeDisplay(
     elapsedSeconds: Long,
     modifier: Modifier = Modifier
 ) {
@@ -129,7 +127,7 @@ fun StopwatchTimeDisplay(
 }
 
 @Composable
-fun StopwatchResetTime(
+fun TrackerResetTime(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -145,7 +143,7 @@ fun StopwatchResetTime(
 }
 
 @Composable
-fun StopwatchSettingsIcon(
+fun TrackerSettingsIcon(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -166,7 +164,7 @@ fun StopwatchSettingsIcon(
 
 
 @Composable
-fun StopwatchRunToggleButton(
+fun TrackerRunToggleButton(
     label: String,
     onClick: () -> Unit,
     shape: RoundedCornerShape,
@@ -184,7 +182,7 @@ fun StopwatchRunToggleButton(
 
 
 @Composable
-fun StopwatchRunToggleIcon(
+fun TrackerRunToggleIcon(
     isRunning: Boolean,
 //    shape: RoundedCornerShape,
     modifier: Modifier = Modifier
@@ -198,25 +196,25 @@ fun StopwatchRunToggleIcon(
 
 @Preview(showBackground = true)
 @Composable
-fun StopwatchCardPreview() {
-    StopwatchCard(stopwatchWithEvents = StopwatchWithEvents(stopwatch = Stopwatch(label = "Test")), deviceId = "Some device")
+fun TrackerCardPreview() {
+    TrackerCard(trackerWithEvents = TrackerWithEvents(tracker = Tracker(label = "Test")), deviceId = "Some device")
 }
 
 @Composable
-fun StopwatchCard(stopwatchWithEvents: StopwatchWithEvents, deviceId: String) {
+fun TrackerCard(trackerWithEvents: TrackerWithEvents, deviceId: String) {
     val scope = androidx.compose.runtime.rememberCoroutineScope()
 
     val context = androidx.compose.ui.platform.LocalContext.current
     val db = remember { AppDatabase.getDatabase(context.applicationContext) }
-    val dao = db.stopwatchDao()
+    val dao = db.trackerDao()
 
-    val stopwatch = stopwatchWithEvents.stopwatch
-    val events = stopwatchWithEvents.events
+    val tracker = trackerWithEvents.tracker
+    val events = trackerWithEvents.events
 
     val focusManager = LocalFocusManager.current
     val configuration = LocalConfiguration.current
 
-    var editedLabel by remember { mutableStateOf(stopwatch.label) }
+    var editedLabel by remember { mutableStateOf(tracker.label) }
     val isKeyboardOpen = WindowInsets.ime.getBottom(LocalDensity.current) > 0
     var lastOrientation by rememberSaveable { mutableIntStateOf(configuration.orientation) }
 
@@ -276,13 +274,13 @@ fun StopwatchCard(stopwatchWithEvents: StopwatchWithEvents, deviceId: String) {
             }
         }
     }
-    displayText = "${stopwatch.label}: ${elapsedSeconds}s; paused: ${pausedMillis / 1000}s; isRunning: $isRunning"
+    displayText = "${tracker.label}: ${elapsedSeconds}s; paused: ${pausedMillis / 1000}s; isRunning: $isRunning"
 
     Card(
         onClick = {
 
             val newEvent = TimeEvent(
-                stopwatchId = stopwatch.id,
+                trackerId = tracker.id,
                 eventType = if (isRunning) EventType.PAUSE else EventType.RESUME,
                 timestamp = System.currentTimeMillis(),
                 deviceId = deviceId
@@ -309,7 +307,7 @@ fun StopwatchCard(stopwatchWithEvents: StopwatchWithEvents, deviceId: String) {
         ) {
             Spacer(modifier = Modifier.width(4.dp))
 
-            StopwatchLabel(
+            TrackerLabel(
                 editedLabel = editedLabel,
                 onValueChange = { newValue ->
                     editedLabel = newValue
@@ -328,15 +326,15 @@ fun StopwatchCard(stopwatchWithEvents: StopwatchWithEvents, deviceId: String) {
 
             Spacer(modifier = Modifier.weight(1f))
 
-            StopwatchRunToggleIcon(
+            TrackerRunToggleIcon(
                 isRunning
             )
 
             Spacer(modifier = Modifier.width(16.dp))
 
-            StopwatchSettingsIcon(
+            TrackerSettingsIcon(
                 onClick = {
-                    scope.launch { dao.deleteEventsForStopwatch(stopwatch.id) }
+                    scope.launch { dao.deleteEventsForTracker(tracker.id) }
                 },
                 modifier = Modifier
 //                        .align(Alignment.Center)

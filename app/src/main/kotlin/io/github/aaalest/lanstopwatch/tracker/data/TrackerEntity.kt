@@ -7,8 +7,6 @@ import androidx.room.ForeignKey
 import androidx.room.PrimaryKey
 import androidx.room.Relation
 import androidx.room.TypeConverter
-import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
 
 enum class EventType {
     PAUSE,
@@ -19,33 +17,33 @@ enum class EventType {
     tableName = "time_events",
     foreignKeys = [
         ForeignKey(
-            entity = Stopwatch::class,
+            entity = Tracker::class,
             parentColumns = ["id"],
-            childColumns = ["stopwatchId"],
-            onDelete = ForeignKey.CASCADE // If stopwatch is deleted, delete its events too
+            childColumns = ["trackerId"],
+            onDelete = ForeignKey.CASCADE // If tracker is deleted, delete its events too
         )
     ]
 )
 data class TimeEvent(
     @PrimaryKey(autoGenerate = true) val eventId: Long = 0,
-    val stopwatchId: Long, // The Foreign Key
+    val trackerId: Long, // The Foreign Key
     val eventType: EventType,
     val timestamp: Long,
     val deviceId: String
 )
 
-@Entity(tableName = "stopwatches")
-data class Stopwatch(
+@Entity(tableName = "trackers")
+data class Tracker(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
     var label: String
 )
 
-data class StopwatchWithEvents(
-    @Embedded val stopwatch: Stopwatch,
+data class TrackerWithEvents(
+    @Embedded val tracker: Tracker,
     @Relation(
         parentColumn = "id",
-        entityColumn = "stopwatchId"
+        entityColumn = "trackerId"
     )
     val events: List<TimeEvent> = emptyList()
 )

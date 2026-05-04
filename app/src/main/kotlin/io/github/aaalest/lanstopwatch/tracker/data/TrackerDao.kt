@@ -9,27 +9,27 @@ import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
 
 @Dao
-interface StopwatchDao {
+interface TrackerDao {
     @Transaction // Necessary because Room runs two queries behind the scenes
-    @Query("SELECT * FROM stopwatches")
-    fun getAllStopwatches(): Flow<List<StopwatchWithEvents>>
+    @Query("SELECT * FROM trackers")
+    fun getAllTrackers(): Flow<List<TrackerWithEvents>>
 
     @Insert
-    suspend fun insertStopwatch(stopwatch: Stopwatch): Long // Returns the new ID
+    suspend fun insertTracker(stopwatch: Tracker): Long // Returns the new ID
 
     @Transaction
-    @Query("SELECT * FROM stopwatches WHERE id = :id")
-    suspend fun getStopwatchById(id: Long): Stopwatch?
+    @Query("SELECT * FROM trackers WHERE id = :id")
+    suspend fun getTrackerById(id: Long): Tracker?
 
     @Update
-    suspend fun updateStopwatch(stopwatch: Stopwatch): Int // Returns count of updated rows
+    suspend fun updateTracker(stopwatch: Tracker): Int // Returns count of updated rows
 
     @Delete
-    suspend fun deleteStopwatch(stopwatch: Stopwatch): Int // Returns count of deleted rows
+    suspend fun deleteTracker(stopwatch: Tracker): Int // Returns count of deleted rows
 
     @Insert
     suspend fun insertEvent(event: TimeEvent): Long // Returns the new Event ID
 
-    @Query("DELETE FROM time_events WHERE stopwatchId = :stopwatchId")
-    suspend fun deleteEventsForStopwatch(stopwatchId: Long): Int // Returns count of deleted events
+    @Query("DELETE FROM time_events WHERE trackerId = :stopwatchId")
+    suspend fun deleteEventsForTracker(stopwatchId: Long): Int // Returns count of deleted events
 }

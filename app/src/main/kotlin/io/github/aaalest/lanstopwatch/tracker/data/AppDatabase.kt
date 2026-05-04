@@ -18,12 +18,12 @@ class TrackerConverters {
 
 
 @Database(
-    entities = [Stopwatch::class, TimeEvent::class],
+    entities = [Tracker::class, TimeEvent::class],
     version = 1
 )
 @TypeConverters(TrackerConverters::class) // Add this line
 abstract class AppDatabase : RoomDatabase() {
-    abstract fun stopwatchDao(): StopwatchDao
+    abstract fun trackerDao(): TrackerDao
 
     companion object {
         @Volatile
@@ -34,7 +34,7 @@ abstract class AppDatabase : RoomDatabase() {
                 val instance = Room.databaseBuilder(
                     context.applicationContext,
                     AppDatabase::class.java,
-                    "stopwatch_database"
+                    "tracker_database"
                 ).build()
                 INSTANCE = instance
                 instance
