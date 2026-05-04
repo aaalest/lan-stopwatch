@@ -14,9 +14,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 
-import io.github.aaalest.lanstopwatch.ui.theme.LanStopwatchTheme
+import io.github.aaalest.lanstopwatch.core.ui.theme.LanStopwatchTheme
 //import io.github.aaalest.lanstopwatch.components.StopwatchView
-import io.github.aaalest.lanstopwatch.data.Stopwatch
+import io.github.aaalest.lanstopwatch.tracker.data.Stopwatch
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
@@ -24,10 +24,10 @@ import androidx.compose.material3.Button
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
-import io.github.aaalest.lanstopwatch.components.StopwatchCard
-import io.github.aaalest.lanstopwatch.data.AppDatabase
-import io.github.aaalest.lanstopwatch.data.EventType
-import io.github.aaalest.lanstopwatch.data.TimeEvent
+import io.github.aaalest.lanstopwatch.tracker.presentation.components.StopwatchCard
+import io.github.aaalest.lanstopwatch.tracker.data.AppDatabase
+import io.github.aaalest.lanstopwatch.tracker.data.EventType
+import io.github.aaalest.lanstopwatch.tracker.data.TimeEvent
 //import io.github.aaalest.lanstopwatch.data.sampleCards
 import kotlinx.coroutines.launch
 

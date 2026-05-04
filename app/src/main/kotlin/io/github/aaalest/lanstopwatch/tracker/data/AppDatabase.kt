@@ -1,4 +1,4 @@
-package io.github.aaalest.lanstopwatch.data
+package io.github.aaalest.lanstopwatch.tracker.data
 
 import android.content.Context
 import androidx.room.Database

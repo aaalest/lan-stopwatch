@@ -1,4 +1,4 @@
-package io.github.aaalest.lanstopwatch.components
+package io.github.aaalest.lanstopwatch.tracker.presentation.components
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -20,8 +20,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import io.github.aaalest.lanstopwatch.data.AppDatabase
-import io.github.aaalest.lanstopwatch.data.EventType
+import io.github.aaalest.lanstopwatch.tracker.data.AppDatabase
+import io.github.aaalest.lanstopwatch.tracker.data.EventType
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PlayArrow
@@ -44,8 +44,8 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.sp
 
-import io.github.aaalest.lanstopwatch.data.Stopwatch
-import io.github.aaalest.lanstopwatch.data.TimeEvent
+import io.github.aaalest.lanstopwatch.tracker.data.Stopwatch
+import io.github.aaalest.lanstopwatch.tracker.data.TimeEvent
 import kotlinx.coroutines.launch
 import kotlin.collections.plus
 

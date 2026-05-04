@@ -1,4 +1,4 @@
-package io.github.aaalest.lanstopwatch.data
+package io.github.aaalest.lanstopwatch.tracker.data
 
 import androidx.room.Dao
 import androidx.room.Delete

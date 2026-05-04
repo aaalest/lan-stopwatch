@@ -1,4 +1,4 @@
-package io.github.aaalest.lanstopwatch.utils
+package io.github.aaalest.lanstopwatch.core.utils
 
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf

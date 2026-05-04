@@ -1,4 +1,4 @@
-package io.github.aaalest.lanstopwatch.ui.theme
+package io.github.aaalest.lanstopwatch.core.ui.theme
 
 import android.app.Activity
 import android.os.Build
