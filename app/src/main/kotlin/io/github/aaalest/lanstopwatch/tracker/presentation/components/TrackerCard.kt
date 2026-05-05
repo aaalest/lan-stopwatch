@@ -50,38 +50,6 @@ import kotlinx.coroutines.launch
 
 
 @Composable
-private fun formatTime(totalSeconds: Long): AnnotatedString {
-    val hours = totalSeconds / 3600
-    val minutes = (totalSeconds % 3600) / 60
-    val seconds = totalSeconds % 60
-
-    val numberStyle = SpanStyle(
-        fontSize = 32.sp,
-        fontWeight = FontWeight.ExtraBold,
-        color = MaterialTheme.colorScheme.primary
-    )
-    val unitStyle = SpanStyle(
-        fontSize = 16.sp,
-        fontWeight = FontWeight.Normal,
-        color = Color.Gray
-    )
-
-    return buildAnnotatedString {
-        // Hours
-        withStyle(style = numberStyle) { append(String.format("%02d", hours)) }
-        withStyle(style = unitStyle) { append("h ") }
-
-        // Minutes
-        withStyle(style = numberStyle) { append(String.format("%02d", minutes)) }
-        withStyle(style = unitStyle) { append("m ") }
-
-        // Seconds
-        withStyle(style = numberStyle) { append(String.format("%02d", seconds)) }
-        withStyle(style = unitStyle) { append("s") }
-    }
-}
-
-@Composable
 fun TrackerLabel(
     editedLabel: String,
     onValueChange: (String) -> Unit,
@@ -110,18 +78,6 @@ fun TrackerLabel(
         ),
         singleLine = true,
         cursorBrush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.primary),
-        modifier = modifier
-    )
-}
-
-
-@Composable
-fun TrackerTimeDisplay(
-    elapsedSeconds: Long,
-    modifier: Modifier = Modifier
-) {
-    Text(
-        text = formatTime(elapsedSeconds),
         modifier = modifier
     )
 }
@@ -240,41 +196,9 @@ fun TrackerCard(trackerWithEvents: TrackerWithEvents, deviceId: String) {
 //    stopwatch.events = stopwatch.events.ifEmpty {
 //        listOf(TimeEvent(EventType.START, System.currentTimeMillis(), deviceId))
 //    } // If empty, add a START event
-    var displayText by remember { mutableStateOf("") }
-    var elapsedSeconds by remember { mutableLongStateOf(0L) }
 
-    val isNew = events.isEmpty()
-    var isRunning = events.lastOrNull()?.eventType == EventType.RESUME
-//    var elapsedMillis = 0.0
-    var pausedMillis = 0L
 
-    if (isNew) {
-        elapsedSeconds = 0
-    } else {
-        if (events.size > 2) {
-            events.subList(1, events.size)
-                .windowed(size = 2, step = 2) { (pause, resume) ->
-                    pausedMillis += resume.timestamp - pause.timestamp
-                }
-        }
-
-        LaunchedEffect(isRunning, events) {
-            isRunning = events.lastOrNull()?.eventType == EventType.RESUME
-            if (isRunning) {
-                while (true) {
-                    val now = System.currentTimeMillis()
-                    val elapsedMillis = now - events[0].timestamp - pausedMillis
-                    elapsedSeconds = elapsedMillis / 1000
-                    println(displayText)
-                    kotlinx.coroutines.delay(1000 - (System.currentTimeMillis() % 1000))
-                }
-            } else {
-                val elapsedMillis = events.last().timestamp - events[0].timestamp - pausedMillis
-                elapsedSeconds = elapsedMillis / 1000
-            }
-        }
-    }
-    displayText = "${tracker.label}: ${elapsedSeconds}s; paused: ${pausedMillis / 1000}s; isRunning: $isRunning"
+    val isRunning = events.lastOrNull()?.eventType == EventType.RESUME
 
     Card(
         onClick = {
