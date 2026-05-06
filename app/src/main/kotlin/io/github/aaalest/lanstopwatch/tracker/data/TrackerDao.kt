@@ -14,6 +14,22 @@ interface TrackerDao {
     @Query("SELECT * FROM trackers")
     fun getAllTrackers(): Flow<List<TrackerWithEvents>>
 
+    @Transaction
+    @Query("SELECT * FROM trackers WHERE hidden = 0")
+    fun getAllVisibleTrackers(): Flow<List<TrackerWithEvents>>
+
+    @Transaction
+    @Query("""
+    SELECT * FROM trackers 
+    WHERE id IN (
+        SELECT trackerId FROM time_events as e1
+        WHERE timestamp = (SELECT MAX(timestamp) FROM time_events as e2 WHERE e1.trackerId = e2.trackerId)
+        AND eventType = 'RESUME'
+    )
+    LIMIT 1
+    """)
+    fun getFirstActiveTracker(): Flow<TrackerWithEvents?>
+
     @Insert
     suspend fun insertTracker(stopwatch: Tracker): Long // Returns the new ID
 

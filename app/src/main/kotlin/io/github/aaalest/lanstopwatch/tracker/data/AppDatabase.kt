@@ -7,6 +7,8 @@ import androidx.room.RoomDatabase
 import androidx.room.TypeConverter
 import androidx.room.TypeConverters
 
+import io.github.aaalest.lanstopwatch.tracker.domain.EventType
+
 
 class TrackerConverters {
     @TypeConverter

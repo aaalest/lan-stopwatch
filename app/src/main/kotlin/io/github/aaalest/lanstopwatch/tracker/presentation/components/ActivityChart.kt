@@ -1,21 +1,14 @@
 package io.github.aaalest.lanstopwatch.tracker.presentation.components
 
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableLongStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -36,6 +29,7 @@ import java.time.LocalTime
 import java.time.ZoneId
 
 import io.github.aaalest.lanstopwatch.core.utils.mapRange
+import io.github.aaalest.lanstopwatch.tracker.presentation.toComposeColor
 
 data class DayRange(val start: Long, val end: Long)
 
@@ -180,12 +174,12 @@ fun ActivityCircle(
 
 @Preview
 @Composable
-fun ActivityCartPreview() {
-    ActivityCart()
+fun ActivityChartPreview() {
+    ActivityChart()
 }
 
 @Composable
-fun ActivityCart() {
+fun ActivityChart() {
     val context = androidx.compose.ui.platform.LocalContext.current
     val db = remember { AppDatabase.getDatabase(context.applicationContext) }
     val dao = db.trackerDao()
@@ -193,32 +187,39 @@ fun ActivityCart() {
     var segments: List<ActivitySegment> = listOf()
     val trackersWithEvents by dao.getAllTrackers().collectAsState(initial = emptyList())
 
+    // TODO: iterate through events first, old to new. To draw events in correct order
     if (trackersWithEvents.isNotEmpty()) {
         trackersWithEvents.forEach { trackerWithEvents ->
+            val tracker = trackerWithEvents.tracker
             val events = trackerWithEvents.events
             val dayRange = getTodayRange()
 
-            segments = events.chunked(2).map { pair ->
+            segments = segments + events.chunked(2).map { pair ->
                 val resumeTimestamp = pair[0].timestamp
                 // If there is no second event (Pause), use the current time (Active segment)
                 val pauseTimestamp = pair.getOrNull(1)?.timestamp ?: System.currentTimeMillis()
 
                 ActivitySegment(
-                    fromDegree = resumeTimestamp.mapRange(
-                        dayRange.start, dayRange.end,
-                        0, 360
+                    fromDegree = resumeTimestamp.toDouble().mapRange(
+                        dayRange.start.toDouble(),
+                        dayRange.end.toDouble(),
+                        0.0,
+                        360.0
                     ).toFloat(),
-                    toDegree = pauseTimestamp.mapRange(
-                        dayRange.start, dayRange.end,
-                        0, 360
+                    toDegree = pauseTimestamp.toDouble().mapRange(
+                        dayRange.start.toDouble(),
+                        dayRange.end.toDouble(),
+                        0.0,
+                        360.0
                     ).toFloat(),
-                    color = Color.Red
+                    color = tracker.color?.toComposeColor() ?: Color.White
                 )
             }
         }
     }
 
     // TODO: Update the ActivityCircle every set time period
+    // TODO: add TrackerTimeDisplay in the center
     ActivityCircle(
         segments,
         modifier = Modifier.padding(16.dp)

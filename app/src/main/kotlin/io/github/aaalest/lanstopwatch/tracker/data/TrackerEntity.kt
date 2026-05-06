@@ -8,10 +8,9 @@ import androidx.room.PrimaryKey
 import androidx.room.Relation
 import androidx.room.TypeConverter
 
-enum class EventType {
-    PAUSE,
-    RESUME,
-}
+import io.github.aaalest.lanstopwatch.tracker.domain.EventType
+import io.github.aaalest.lanstopwatch.tracker.domain.TrackerColor
+
 
 @Entity(
     tableName = "time_events",
@@ -25,8 +24,9 @@ enum class EventType {
     ]
 )
 data class TimeEvent(
-    @PrimaryKey(autoGenerate = true) val eventId: Long = 0,
-    val trackerId: Long, // The Foreign Key
+    @PrimaryKey
+    val eventId: String = java.util.UUID.randomUUID().toString(),
+    val trackerId: String, // The Foreign Key
     val eventType: EventType,
     val timestamp: Long,
     val deviceId: String
@@ -34,9 +34,11 @@ data class TimeEvent(
 
 @Entity(tableName = "trackers")
 data class Tracker(
-    @PrimaryKey(autoGenerate = true)
-    val id: Long = 0,
-    var label: String
+    @PrimaryKey
+    val id: String = java.util.UUID.randomUUID().toString(),
+    var label: String,
+    var color: TrackerColor? = null,
+    var hidden: Boolean = false
 )
 
 data class TrackerWithEvents(
