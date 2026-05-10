@@ -3,7 +3,6 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.google.ksp)
 }
 
@@ -64,6 +63,12 @@ dependencies {
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
+
+    // Korlibs
+//    implementation("com.soywiz.korlibs.klock:klock:4.0.10")
+//    implementation("org.korge:korlibs-time:6.1.0")
+    implementation(libs.klock)
+    // TODO: try Korlibs-Math (Korma) & Korlibs-IO (Korio)
 
     // Testing
     testImplementation(libs.junit)
