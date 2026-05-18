@@ -26,6 +26,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.movableContentOf
@@ -61,6 +62,7 @@ class MainActivity : ComponentActivity() {
                     val movableContent = remember(intervalRecords) {
                         movableContentOf {
                             ActivityChart(
+                                backgroundColor = MaterialTheme.colorScheme.background,
                                 modifier = Modifier.padding(16.dp)
                             )
 

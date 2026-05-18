@@ -36,6 +36,9 @@ import androidx.compose.ui.unit.sp
 
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.Paint
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.ViewModel
@@ -212,9 +215,15 @@ data class ActivitySegment(
     val color: Color
 )
 
+data class ActivityUiState(
+    val segments: List<ActivitySegment> = emptyList(),
+    val currentTimeInDegrees: Float = 0f
+)
+
 @Composable
 fun ActivityCircle(
-    segments: List<ActivitySegment>,
+    activityUiState: ActivityUiState,
+    backgroundColor: Color,
     modifier: Modifier = Modifier
 ) {
     val trackColor = MaterialTheme.colorScheme.surfaceContainerHigh
@@ -231,6 +240,9 @@ fun ActivityCircle(
                 val arcSize = Size(radius * 2, radius * 2)
                 val topLeft = Offset(center.x - radius, center.y - radius)
 
+                val bounds = Rect(Offset.Zero, size)
+                val layerPaint = Paint()
+
                 onDrawBehind {
                     // 1. Draw track
                     drawCircle(
@@ -240,7 +252,7 @@ fun ActivityCircle(
                     )
 
                     // 2. Draw segments
-                    segments.forEach { segment ->
+                    activityUiState.segments.forEach { segment ->
                         // Simplify sweep logic since ViewModel now handles the 'to >= from' fix
                         val sweepAngle = (segment.toDegree - segment.fromDegree).coerceAtLeast(0f)
 
@@ -266,6 +278,38 @@ fun ActivityCircle(
                             )
                         }
                     }
+
+                    // Draw interlocking crescent to create visual padding between previous and next day
+                    drawContext.canvas.saveLayer(bounds, layerPaint)
+
+                    val demoStartDegree = activityUiState.currentTimeInDegrees
+                    val demoEndDegree = activityUiState.currentTimeInDegrees + 5f
+                    val demoSweep = demoEndDegree - demoStartDegree
+
+                    drawArc(
+                        color = backgroundColor,
+                        startAngle = demoStartDegree - 90f,
+                        sweepAngle = demoSweep,
+                        useCenter = false,
+                        style = Stroke(width = strokeWidth + 1.5f, cap = StrokeCap.Round),
+                        topLeft = topLeft,
+                        size = arcSize
+                    )
+
+                    val targetAngle = (demoStartDegree - 90f).degrees
+                    val biteCenter = Offset(
+                        x = (center.x + radius * cos(targetAngle)).toFloat(),
+                        y = (center.y + radius * sin(targetAngle)).toFloat()
+                    )
+
+                    drawCircle(
+                        color = Color.Transparent,
+                        radius = strokeWidth / 2 + 1.5f,
+                        center = biteCenter,
+                        blendMode = BlendMode.Clear
+                    )
+
+                    drawContext.canvas.restore()
                 }
             }
     )
@@ -274,7 +318,9 @@ fun ActivityCircle(
 @Preview
 @Composable
 fun ActivityChartPreview() {
-    ActivityChart()
+    ActivityChart(
+        backgroundColor = MaterialTheme.colorScheme.background
+    )
 }
 
 class ActivityViewModel(private val dao: IntervalTrackerDao) : ViewModel() {
@@ -292,14 +338,14 @@ class ActivityViewModel(private val dao: IntervalTrackerDao) : ViewModel() {
 
     // 3. The Main UI State
     // We combine Intervals, Trackers, and the Ticker into one stable stream
-    val uiState: StateFlow<List<ActivitySegment>> = combine(
+    val uiState: StateFlow<ActivityUiState> = combine(
         dao.getIntervalsInTimeRange(dayRangeInMillis.first, dayRangeInMillis.last),
         dao.getAllTrackers(),
         currentTimeFlow
     ) { intervals, trackers, currentTime ->
         val trackerMap = trackers.associateBy { it.id }
 
-        intervals.mapNotNull { interval ->
+        val segments = intervals.mapNotNull { interval ->
             val tracker = trackerMap[interval.trackerId] ?: return@mapNotNull null
 
             // If interval is ongoing (end is null), use current ticker time
@@ -313,10 +359,15 @@ class ActivityViewModel(private val dao: IntervalTrackerDao) : ViewModel() {
                 color = tracker.color?.toComposeColor() ?: Color.White
             )
         }
+
+        ActivityUiState(
+            segments = segments,
+            currentTimeInDegrees = mapMillisToDegree(currentTime)
+        )
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
-        initialValue = emptyList()
+        initialValue = ActivityUiState()
     )
 
 //    private fun mapMillisToDegree(millis: Long): Float {
@@ -349,6 +400,7 @@ class ActivityViewModel(private val dao: IntervalTrackerDao) : ViewModel() {
 
 @Composable
 fun ActivityChart(
+    backgroundColor: Color,
     modifier: Modifier = Modifier
 ) {
     // 1. Get your dependencies first
@@ -364,11 +416,12 @@ fun ActivityChart(
     )
 
     // 3. Observe the state
-    val segments by viewModel.uiState.collectAsStateWithLifecycle()
+    val activityUiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     // 4. Pass the data down to drawing logic
     ActivityCircle(
-        segments = segments,
+        activityUiState = activityUiState,
+        backgroundColor = backgroundColor,
         modifier
     )
 }
