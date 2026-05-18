@@ -24,14 +24,20 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import kotlinx.coroutines.launch
+import korlibs.time.*
 
 import io.github.aaalest.lanstopwatch.core.utils.ToggleController
 import io.github.aaalest.lanstopwatch.core.utils.fadingEdge
-import io.github.aaalest.lanstopwatch.tracker.data.Tracker
-import io.github.aaalest.lanstopwatch.tracker.data.TrackerWithEvents
-import io.github.aaalest.lanstopwatch.tracker.data.TimeEvent
 import io.github.aaalest.lanstopwatch.tracker.data.AppDatabase
-import io.github.aaalest.lanstopwatch.tracker.domain.EventType
+import io.github.aaalest.lanstopwatch.tracker.data.IntervalRecord
+import io.github.aaalest.lanstopwatch.tracker.data.IntervalTracker
+import io.github.aaalest.lanstopwatch.tracker.data.TimeInterval
+
+
+fun getStringFromTzOffset(offsetMillis: Double): String {
+    val offset = TimezoneOffset(offsetMillis)
+    return offset.timeZone
+}
 
 
 @Composable
@@ -104,13 +110,13 @@ fun TrackerRunStatusIcon(
 
 @Preview(showBackground = true)
 @Composable
-fun TrackerCardPreview() {
-    TrackerCard(trackerWithEvents = TrackerWithEvents(tracker = Tracker(label = "Test asdfasdfasdfsadfasdfasdfker(la ker(la")), deviceId = "Some device")
+fun IntervalTrackerCardPreview() {
+    IntervalTrackerCard(record = IntervalRecord(tracker = IntervalTracker(label = "Test asdfasdfasdfsadfasdfasdfker(la ker(la")), deviceId = "Some device")
 }
 
 @Composable
-fun TrackerCard(
-    trackerWithEvents: TrackerWithEvents,
+fun IntervalTrackerCard(
+    record: IntervalRecord,
     deviceId: String, modifier:
     Modifier = Modifier
 ) {
@@ -118,12 +124,12 @@ fun TrackerCard(
 
     val context = androidx.compose.ui.platform.LocalContext.current
     val db = remember { AppDatabase.getDatabase(context.applicationContext) }
-    val dao = db.trackerDao()
+    val dao = db.intervalTrackerDao()
 
-    val tracker = trackerWithEvents.tracker
-    val events = trackerWithEvents.events
+    val tracker = record.tracker
+    val intervals = record.intervals
 
-    val trackerCardSettingToggle = rememberSaveable(saver = ToggleController.Saver) {
+    val cardSettingsToggle = rememberSaveable(saver = ToggleController.Saver) {
         ToggleController(false)
     }
 
@@ -136,21 +142,24 @@ fun TrackerCard(
 //        listOf(TimeEvent(EventType.START, System.currentTimeMillis(), deviceId))
 //    } // If empty, add a START event
 
-
-    val isRunning = events.lastOrNull()?.eventType == EventType.RESUME
+    val isRunning = intervals.isNotEmpty() && intervals.last().endMillis == null
 
     Card(
         onClick = {
-            // TODO: automatically pause other tracker's RESUME event
-            val newEvent = TimeEvent(
-                trackerId = tracker.id,
-                eventType = if (isRunning) EventType.PAUSE else EventType.RESUME,
-                timestamp = System.currentTimeMillis(),
-                deviceId = deviceId
-            )
-
             scope.launch {
-                dao.insertEvent(newEvent)
+                dao.stopActiveIntervals()
+
+                if (!isRunning) {
+                    val tzOffset = DateTime.nowLocal().offset
+                    val newInterval = TimeInterval(
+                        trackerId = tracker.id,
+                        startMillis = System.currentTimeMillis(),
+                        endMillis = null,
+                        tzOffsetMillis = tzOffset.totalMilliseconds,
+                        deviceId = deviceId
+                    )
+                    dao.insertInterval(newInterval)
+                }
             }
         },
         shape = RoundedCornerShape(if (isRunning) 16.dp else 48.dp),
@@ -189,7 +198,7 @@ fun TrackerCard(
 
             TrackerSettingsIcon(
                 onClick = {
-                    trackerCardSettingToggle.toggle()
+                    cardSettingsToggle.toggle()
                 },
                 modifier = Modifier
 //                        .align(Alignment.Center)
@@ -200,7 +209,7 @@ fun TrackerCard(
         } // Row
     } // Card
 
-    if (trackerCardSettingToggle.isActive) {
-        TrackerSettingDialog(tracker, trackerCardSettingToggle)
+    if (cardSettingsToggle.isActive) {
+        IntervalTrackerSettingDialog(tracker, cardSettingsToggle)
     }
 }

@@ -14,7 +14,7 @@ import androidx.compose.ui.Modifier
 
 import io.github.aaalest.lanstopwatch.core.ui.theme.LanStopwatchTheme
 //import io.github.aaalest.lanstopwatch.components.StopwatchView
-import io.github.aaalest.lanstopwatch.tracker.data.Tracker
+import io.github.aaalest.lanstopwatch.tracker.data.IntervalTracker
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -34,9 +34,9 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
-import io.github.aaalest.lanstopwatch.tracker.presentation.components.TrackerCard
 import io.github.aaalest.lanstopwatch.tracker.data.AppDatabase
 import io.github.aaalest.lanstopwatch.tracker.presentation.components.ActivityChart
+import io.github.aaalest.lanstopwatch.tracker.presentation.components.IntervalTrackerCard
 //import io.github.aaalest.lanstopwatch.data.sampleCards
 import kotlinx.coroutines.launch
 
@@ -45,12 +45,12 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val db = AppDatabase.getDatabase(applicationContext)
-        val dao = db.trackerDao()
+        val internalTrackerDao = db.intervalTrackerDao()
 
         enableEdgeToEdge()
         setContent {
             LanStopwatchTheme {
-                val trackersWithEvents by dao.getAllVisibleTrackers().collectAsState(initial = emptyList())
+                val intervalRecords by internalTrackerDao.getVisibleRecords().collectAsState(initial = emptyList())
                 val scope = rememberCoroutineScope()
 
                 val configuration = LocalConfiguration.current
@@ -58,9 +58,11 @@ class MainActivity : ComponentActivity() {
 
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     val movableContentModifier = Modifier.fillMaxSize()
-                    val movableContent = remember(trackersWithEvents) {
+                    val movableContent = remember(intervalRecords) {
                         movableContentOf {
-                            ActivityChart()
+                            ActivityChart(
+                                modifier = Modifier.padding(16.dp)
+                            )
 
                             Box(
                                 modifier = Modifier.fillMaxSize(),
@@ -76,8 +78,8 @@ class MainActivity : ComponentActivity() {
                                         .align(Alignment.TopCenter)
                                         .padding(12.dp, 0.dp)
                                 ) {
-                                    items(trackersWithEvents) { trackerWithEvents ->
-                                        TrackerCard(trackerWithEvents, "Phone_01")
+                                    items(intervalRecords) { record ->
+                                        IntervalTrackerCard(record, "Phone_01")
                                     }
 //                                if (trackersWithEvents.isNotEmpty()) {
 //                                    trackersWithEvents.forEach { trackerWithEvents ->
@@ -86,11 +88,12 @@ class MainActivity : ComponentActivity() {
 //                                }
                                 }
 
+                                // TODO: Add an option to add a single time events
                                 FilledIconButton(
                                     onClick = {
                                         scope.launch {
-                                            dao.insertTracker(
-                                                Tracker(label = "New Tracker")
+                                            internalTrackerDao.insertTracker(
+                                                IntervalTracker(label = "New Tracker")
                                             )
                                         }
                                     },

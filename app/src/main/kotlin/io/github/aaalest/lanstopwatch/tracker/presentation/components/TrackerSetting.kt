@@ -67,7 +67,7 @@ import androidx.compose.ui.window.PopupProperties
 import io.github.aaalest.lanstopwatch.core.utils.ToggleController
 import io.github.aaalest.lanstopwatch.core.utils.fadingEdge
 import io.github.aaalest.lanstopwatch.tracker.data.AppDatabase
-import io.github.aaalest.lanstopwatch.tracker.data.Tracker
+import io.github.aaalest.lanstopwatch.tracker.data.IntervalTracker
 import io.github.aaalest.lanstopwatch.tracker.domain.TrackerColor
 import io.github.aaalest.lanstopwatch.tracker.presentation.toComposeColor
 import kotlinx.coroutines.launch
@@ -260,12 +260,12 @@ fun ColorSelector(color: TrackerColor?, onColorChoose: (TrackerColor?) -> Unit, 
 }
 
 @Composable
-fun TrackerSettingDialog(tracker: Tracker, trackerCardSettingToggle: ToggleController) {
+fun IntervalTrackerSettingDialog(tracker: IntervalTracker, settingsToggle: ToggleController) {
     val scope = androidx.compose.runtime.rememberCoroutineScope()
 
     val context = androidx.compose.ui.platform.LocalContext.current
     val db = remember { AppDatabase.getDatabase(context.applicationContext) }
-    val trackerDao = db.trackerDao()
+    val trackerDao = db.intervalTrackerDao()
 
 //    val tracker = trackerWithEvents.tracker
 //    val events = trackerWithEvents.events
@@ -273,23 +273,9 @@ fun TrackerSettingDialog(tracker: Tracker, trackerCardSettingToggle: ToggleContr
     var editedLabel by remember { mutableStateOf(tracker.label) }
     var editedColor by remember { mutableStateOf(tracker.color) }
 
-    // TODO: create a new tracker if label or color is different and warn user about it
-    val onReplace = {
-        scope.launch {
-            // Hide old and create new tracker
-            trackerDao.updateTracker(tracker.copy(hidden = true))
-            trackerDao.insertTracker(
-                Tracker(
-                    label = editedLabel.trim(),
-                    color = editedColor
-                )
-            )
-        }
-    }
-
     val isKeyboardOpen = WindowInsets.ime.getBottom(LocalDensity.current) > 0
 
-    Dialog(onDismissRequest = { trackerCardSettingToggle.turnOff() }) {
+    Dialog(onDismissRequest = { settingsToggle.turnOff() }) {
         // This Card acts as the "Menu" container
         Card(
             modifier = Modifier
@@ -335,7 +321,7 @@ fun TrackerSettingDialog(tracker: Tracker, trackerCardSettingToggle: ToggleContr
                 // TODO: make buttons look better
                 Row {
                     Button(
-                        onClick = { trackerCardSettingToggle.turnOff() },
+                        onClick = { settingsToggle.turnOff() },
 //                        colors = ButtonDefaults.buttonColors(
 //                            containerColor = MaterialTheme.colorScheme.error,
 //                            contentColor = MaterialTheme.colorScheme.onError
@@ -371,15 +357,22 @@ fun TrackerSettingDialog(tracker: Tracker, trackerCardSettingToggle: ToggleContr
                     Button(
                         onClick = {
                             if (editedLabel.trim() == tracker.label && editedColor == tracker.color ) {
-                                trackerCardSettingToggle.turnOff()
+                                settingsToggle.turnOff()
                             } else {
-                                onReplace()
+                                scope.launch {
+                                    trackerDao.updateTracker(
+                                        tracker.copy(
+                                            label = editedLabel.trim(),
+                                            color = editedColor
+                                        )
+                                    )
+                                }
                             }
                         },
                         enabled = (editedLabel.trim() != ""),
 //                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text("Replace")
+                        Text("Save")
                     }
                 }
 

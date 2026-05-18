@@ -4,28 +4,15 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
-import androidx.room.TypeConverter
-import androidx.room.TypeConverters
-
-import io.github.aaalest.lanstopwatch.tracker.domain.EventType
-
-
-class TrackerConverters {
-    @TypeConverter
-    fun fromEventType(value: EventType) = value.name
-
-    @TypeConverter
-    fun toEventType(value: String) = enumValueOf<EventType>(value)
-}
 
 
 @Database(
-    entities = [Tracker::class, TimeEvent::class],
+    entities = [IntervalTracker::class, TimeInterval::class],
     version = 1
 )
-@TypeConverters(TrackerConverters::class) // Add this line
+//@TypeConverters(TrackerConverters::class)
 abstract class AppDatabase : RoomDatabase() {
-    abstract fun trackerDao(): TrackerDao
+    abstract fun intervalTrackerDao(): IntervalTrackerDao
 
     companion object {
         @Volatile
