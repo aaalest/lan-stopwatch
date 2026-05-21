@@ -39,6 +39,11 @@ import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Paint
+import androidx.compose.ui.graphics.PaintingStyle
+import androidx.compose.ui.graphics.Shader
+import androidx.compose.ui.graphics.SweepGradientShader
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
+import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.ViewModel
@@ -283,31 +288,53 @@ fun ActivityCircle(
                     drawContext.canvas.saveLayer(bounds, layerPaint)
 
                     val demoStartDegree = activityUiState.currentTimeInDegrees
-                    val demoEndDegree = activityUiState.currentTimeInDegrees + 5f
-                    val demoSweep = demoEndDegree - demoStartDegree
+                    val demoSweep = 50f
 
-                    drawArc(
-                        color = backgroundColor,
-                        startAngle = demoStartDegree - 90f,
-                        sweepAngle = demoSweep,
-                        useCenter = false,
-                        style = Stroke(width = strokeWidth + 1.5f, cap = StrokeCap.Round),
-                        topLeft = topLeft,
-                        size = arcSize
-                    )
+                    rotate(degrees = demoStartDegree - 90f, pivot = center) {
+                        drawIntoCanvas { canvas ->
+                            val arcRect = Rect(topLeft, arcSize)
+                            val arcPaint = Paint().apply {
+                                isAntiAlias = true
+                                style = PaintingStyle.Stroke
+                                this.strokeWidth = strokeWidth
+                                strokeCap = StrokeCap.Round
 
-                    val targetAngle = (demoStartDegree - 90f).degrees
-                    val biteCenter = Offset(
-                        x = (center.x + radius * cos(targetAngle)).toFloat(),
-                        y = (center.y + radius * sin(targetAngle)).toFloat()
-                    )
+                                shader = SweepGradientShader(
+                                    center = center,
+                                    colors = listOf(
+                                        backgroundColor.copy(alpha = 0.75f),
+                                        backgroundColor.copy(alpha = 0f)
+                                    ),
+                                    colorStops = listOf(
+                                        0f,                  // Fade starts exactly at the beginning of the arc
+                                        (demoSweep / 360f)   // Fade hits 0% exactly at the end of the 5-degree sweep
+                                    )
+                                )
+                            }
+                            canvas.drawArc(
+                                rect = arcRect,
+                                startAngle = 0f,
+                                sweepAngle = demoSweep,
+                                useCenter = false,
+                                paint = arcPaint
+                            )
 
-                    drawCircle(
-                        color = Color.Transparent,
-                        radius = strokeWidth / 2 + 1.5f,
-                        center = biteCenter,
-                        blendMode = BlendMode.Clear
-                    )
+                            val clearPaint = Paint().apply {
+                                isAntiAlias = false
+                                blendMode = BlendMode.Clear
+                                style = PaintingStyle.Stroke
+                                this.strokeWidth = strokeWidth + 1.5f // Must match the width of the arc it's cutting
+                                strokeCap = StrokeCap.Round
+                            }
+                            canvas.drawArc(
+                                rect = arcRect,
+                                startAngle = 0f,
+                                sweepAngle = -5f,
+                                useCenter = false,
+                                paint = clearPaint
+                            )
+                        }
+                    }
 
                     drawContext.canvas.restore()
                 }
@@ -369,14 +396,6 @@ class ActivityViewModel(private val dao: IntervalTrackerDao) : ViewModel() {
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = ActivityUiState()
     )
-
-//    private fun mapMillisToDegree(millis: Long): Float {
-//        val min = startOfDayMillis.toDouble()
-//        val max = endOfDayMillis.toDouble()
-//        val value = millis.toDouble().coerceIn(min, max)
-//
-//        return (((value - min) / (max - min)) * 360.0).toFloat()
-//    }
 
     private fun mapMillisToDegree(millis: Long): Float {
         return millis.toDouble().mapRange(
